@@ -10,12 +10,15 @@
     "ios": {
       "icon": "./assets/expo.icon"
     },
+    "splash": {
+      "image": "./src/assets/branding/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F1512"
+    },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./src/assets/branding/logo.png",
+        "backgroundColor": "#0F1512"
       },
       "predictiveBackGestureEnabled": false
     },
