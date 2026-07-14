@@ -1,67 +1,96 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
 import {
-  router,
-  useLocalSearchParams,
-} from "expo-router";
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 
-import {
-  KPButton,
-  KPInput,
-  KPText,
-} from "@/components/ui";
-
+import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
+import { Colors, Spacing } from "@/theme";
 import { updateGroup } from "../services/group.service";
 
 export default function RenameGroupScreen() {
-  const { groupId, name } =
-    useLocalSearchParams<{
-      groupId: string;
-      name: string;
-    }>();
+  const { groupId, name } = useLocalSearchParams<{
+    groupId: string;
+    name: string;
+  }>();
 
   const [value, setValue] = useState(name ?? "");
 
   function save() {
-    if (!value.trim()) return;
+    const trimmedName = value.trim();
 
-    updateGroup(groupId, value.trim());
+    if (!trimmedName) {
+      Alert.alert("Group name required", "Please enter a valid group name.");
+      return;
+    }
 
-    router.replace("/");
+    updateGroup(groupId, trimmedName);
+
+    router.replace({
+      pathname: "/group",
+      params: { groupId },
+    });
   }
 
   return (
-    <View style={styles.container}>
-      <KPText style={styles.title}>
-        Rename Group
-      </KPText>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <KPCard style={styles.card}>
+          <KPText style={styles.title}>Rename Group</KPText>
+          <KPText style={styles.subtitle}>
+            Update the name so everyone can recognize the group instantly.
+          </KPText>
 
-      <KPInput
-        placeholder="Group Name"
-        value={value}
-        onChangeText={setValue}
-      />
+          <View style={{ height: 24 }} />
 
-      <View style={{ height: 20 }} />
+          <KPInput
+            placeholder="Group Name"
+            value={value}
+            onChangeText={setValue}
+          />
 
-      <KPButton
-        title="Save Changes"
-        onPress={save}
-      />
-    </View>
+          <View style={{ height: 24 }} />
+
+          <KPButton title="Save Changes" onPress={save} />
+        </KPCard>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    justifyContent: "center",
-    padding: 24,
+    backgroundColor: Colors.background,
   },
-
+  container: {
+    flexGrow: 1,
+    padding: Spacing.lg,
+    justifyContent: "center",
+  },
+  card: {
+    padding: 20,
+  },
   title: {
     fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 20,
+    fontWeight: "800",
+    color: Colors.white,
+    marginBottom: 8,
+  },
+  subtitle: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
   },
 });

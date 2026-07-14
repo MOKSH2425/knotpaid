@@ -16,7 +16,7 @@ export function createMember(groupId: string, name: string) {
     [
       Date.now().toString() + Math.random(),
       groupId,
-      name,
+      name.trim(),
       "",
       new Date().toISOString(),
     ],
@@ -38,6 +38,32 @@ export function getMembers(groupId: string) {
   );
 }
 
+export function memberHasExpenses(memberId: string) {
+  const paidExpense = db.getFirstSync<{ id: string }>(
+    `
+      SELECT id
+      FROM expenses
+      WHERE paidBy=?
+      LIMIT 1
+    `,
+    [memberId],
+  );
+
+  if (paidExpense) return true;
+
+  const sharedExpense = db.getFirstSync<{ id: string }>(
+    `
+      SELECT id
+      FROM expense_shares
+      WHERE memberId=?
+      LIMIT 1
+    `,
+    [memberId],
+  );
+
+  return Boolean(sharedExpense);
+}
+
 export function updateMember(
   memberId: string,
   name: string,
@@ -48,7 +74,7 @@ export function updateMember(
       SET name=?
       WHERE id=?
     `,
-    [name, memberId],
+    [name.trim(), memberId],
   );
 }
 

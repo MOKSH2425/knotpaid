@@ -1,51 +1,101 @@
 import { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
-import { KPButton, KPInput, KPText } from "@/components/ui";
+import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
+import { Colors, Spacing } from "@/theme";
 
 import { updateMember } from "../services/member.service";
 
 export default function EditMemberScreen() {
-  const { memberId, name } = useLocalSearchParams<{
+  const { memberId, name, groupId } = useLocalSearchParams<{
     memberId: string;
     name: string;
+    groupId: string;
   }>();
 
   const [value, setValue] = useState(name ?? "");
 
+  function save() {
+    const trimmedName = value.trim();
+
+    if (!trimmedName) {
+      Alert.alert("Member name required", "Please enter a valid member name.");
+      return;
+    }
+
+    updateMember(memberId, trimmedName);
+
+    if (groupId) {
+      router.replace({
+        pathname: "/members",
+        params: { groupId },
+      });
+    } else {
+      router.back();
+    }
+  }
+
   return (
-    <View style={styles.container}>
-      <KPText style={styles.title}>Edit Member</KPText>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <KPCard style={styles.card}>
+          <KPText style={styles.title}>Edit Member</KPText>
+          <KPText style={styles.subtitle}>
+            Change the name and save to update this group member.
+          </KPText>
 
-      <KPInput value={value} onChangeText={setValue} />
+          <View style={{ height: 24 }} />
 
-      <View style={{ height: 20 }} />
+          <KPInput
+            value={value}
+            onChangeText={setValue}
+            placeholder="Member name"
+          />
 
-      <KPButton
-        title="Save"
-        onPress={() => {
-          if (!value.trim()) return;
+          <View style={{ height: 24 }} />
 
-          updateMember(memberId, value.trim());
-
-          router.back();
-        }}
-      />
-    </View>
+          <KPButton title="Save" onPress={save} />
+        </KPCard>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    justifyContent: "center",
+    backgroundColor: Colors.background,
+  },
+  container: {
+    flexGrow: 1,
+    padding: Spacing.lg,
+  },
+  card: {
     padding: 20,
   },
-
   title: {
     fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 20,
+    fontWeight: "800",
+    marginBottom: 8,
+    color: Colors.white,
+  },
+  subtitle: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
   },
 });

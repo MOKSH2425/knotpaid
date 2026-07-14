@@ -47,5 +47,17 @@ export function runMigrations() {
     );
   `);
 
-  console.log("✅ Database migrated successfully.");
+  const groupColumns = db.getAllSync<{ name: string }>(
+    `PRAGMA table_info(${TABLES.GROUPS})`,
+  );
+
+  const hasGroupType = groupColumns.some((column) => column.name === "type");
+
+  if (!hasGroupType) {
+    db.runSync(
+      `ALTER TABLE ${TABLES.GROUPS} ADD COLUMN type TEXT NOT NULL DEFAULT 'other'`,
+    );
+  }
+
+  console.log("Database migrated successfully.");
 }

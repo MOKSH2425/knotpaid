@@ -8,50 +8,57 @@ export default function DashboardHeader() {
   const hour = new Date().getHours();
 
   const greeting =
-    hour < 12
-      ? "Good Morning"
-      : hour < 17
-      ? "Good Afternoon"
-      : "Good Evening";
+    hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
 
   return (
     <View style={styles.container}>
-      <View>
+      <View style={styles.copy}>
         <KPText style={styles.greeting}>👋 {greeting}</KPText>
         <KPText style={styles.title}>Welcome Back</KPText>
       </View>
 
-      <Image
-        source={require("../../../assets/branding/logo.png")}
-        style={styles.logo}
-      />
+      <View style={styles.logoWrap}>
+        <Image
+          source={require("../../../assets/branding/logo.png")}
+          style={styles.logo}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 55,
-    marginBottom: 25,
+    marginTop: 48,
+    marginBottom: 22,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
+  copy: {
+    flex: 1,
+    paddingRight: 12,
+  },
   greeting: {
     color: Colors.textSecondary,
-    fontSize: 15,
+    fontSize: 14,
+    marginBottom: 4,
   },
-
   title: {
-    marginTop: 5,
     fontSize: 28,
     fontWeight: "800",
     color: Colors.text,
   },
-
-  logo: {
+  logoWrap: {
     width: 54,
     height: 54,
+    borderRadius: 27,
+    backgroundColor: Colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logo: {
+    width: 38,
+    height: 38,
   },
 });

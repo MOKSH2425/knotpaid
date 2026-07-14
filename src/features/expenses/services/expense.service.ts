@@ -9,6 +9,11 @@ export function createExpense(
   paidBy: string,
 ) {
   const expenseId = Date.now().toString();
+  const members = getMembers(groupId);
+
+  if (members.length === 0) {
+    throw new Error("Cannot create an expense without group members.");
+  }
 
   db.runSync(
     `
@@ -28,7 +33,7 @@ export function createExpense(
     [
       expenseId,
       groupId,
-      title,
+      title.trim(),
       "",
       amount,
       paidBy,
@@ -37,7 +42,6 @@ export function createExpense(
     ],
   );
 
-  const members = getMembers(groupId);
   const share = calculateEqualSplit(amount, members.length);
 
   members.forEach((member) => {
@@ -84,17 +88,64 @@ export function updateExpense(
   expenseId: string,
   title: string,
   amount: number,
+  paidBy: string,
 ) {
+  const expense = db.getFirstSync<{
+    groupId: string;
+  }>(
+    `
+      SELECT groupId
+      FROM expenses
+      WHERE id=?
+    `,
+    [expenseId],
+  );
+
+  if (!expense) return;
+
   db.runSync(
     `
       UPDATE expenses
       SET
         title=?,
-        amount=?
+        amount=?,
+        paidBy=?
       WHERE id=?
     `,
-    [title, amount, expenseId],
+    [title.trim(), amount, paidBy, expenseId],
   );
+
+  db.runSync(
+    `
+      DELETE FROM expense_shares
+      WHERE expenseId=?
+    `,
+    [expenseId],
+  );
+
+  const members = getMembers(expense.groupId);
+  const share = calculateEqualSplit(amount, members.length);
+
+  members.forEach((member) => {
+    db.runSync(
+      `
+      INSERT INTO expense_shares
+      (
+        id,
+        expenseId,
+        memberId,
+        shareAmount
+      )
+      VALUES (?, ?, ?, ?)
+      `,
+      [
+        expenseId + member.id,
+        expenseId,
+        member.id,
+        share,
+      ],
+    );
+  });
 }
 
 export function deleteExpense(expenseId: string) {

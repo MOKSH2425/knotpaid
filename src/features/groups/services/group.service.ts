@@ -1,21 +1,25 @@
 import { db } from "@/database/db";
 
-export function createGroup(name: string) {
+export type GroupType = "trip" | "home" | "couple" | "other";
+
+export function createGroup(name: string, type: GroupType = "other") {
   db.runSync(
     `
     INSERT INTO groups
     (
       id,
       name,
+      type,
       currency,
       createdAt,
       updatedAt
     )
-    VALUES (?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?)
     `,
     [
       Date.now().toString(),
-      name,
+      name.trim(),
+      type,
       "INR",
       new Date().toISOString(),
       new Date().toISOString(),
@@ -27,6 +31,7 @@ export function getGroups() {
   return db.getAllSync<{
     id: string;
     name: string;
+    type: GroupType;
     currency: string;
     createdAt: string;
     updatedAt: string;

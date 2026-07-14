@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 
 import { KPCard, KPText } from "@/components/ui";
@@ -12,9 +7,7 @@ import KPAvatar from "@/components/ui/KPAvatar";
 
 import { Colors } from "@/theme";
 
-import {
-  deleteGroup,
-} from "@/features/groups/services/group.service";
+import { deleteGroup } from "@/features/groups/services/group.service";
 
 type Props = {
   id: string;
@@ -47,25 +40,21 @@ export default function GroupCard(props: Props) {
   }
 
   function removeGroup() {
-    Alert.alert(
-      "Delete Group",
-      `Delete "${props.name}"?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
+    Alert.alert("Delete Group", `Delete "${props.name}"?`, [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          setLoading(true);
+          deleteGroup(props.id);
+          router.replace("/");
         },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            setLoading(true);
-            deleteGroup(props.id);
-            router.replace("/");
-          },
-        },
-      ],
-    );
+      },
+    ]);
   }
 
   return (
@@ -73,25 +62,21 @@ export default function GroupCard(props: Props) {
       activeOpacity={0.9}
       onPress={openGroup}
       onLongPress={() => {
-        Alert.alert(
-          props.name,
-          "Choose an action",
-          [
-            {
-              text: "Rename",
-              onPress: renameGroup,
-            },
-            {
-              text: "Delete",
-              style: "destructive",
-              onPress: removeGroup,
-            },
-            {
-              text: "Cancel",
-              style: "cancel",
-            },
-          ],
-        );
+        Alert.alert(props.name, "Choose an action", [
+          {
+            text: "Rename",
+            onPress: renameGroup,
+          },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: removeGroup,
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ]);
       }}
     >
       <KPCard style={styles.card}>
@@ -99,18 +84,17 @@ export default function GroupCard(props: Props) {
           <KPAvatar name={props.name} />
 
           <View style={styles.center}>
-            <KPText style={styles.name}>
-              {props.name}
-            </KPText>
-
+            <KPText style={styles.name}>{props.name}</KPText>
             <KPText style={styles.subtitle}>
-              {props.members} Members • {props.expenses} Expenses
+              {props.members} {props.members === 1 ? "member" : "members"} •{" "}
+              {props.expenses} {props.expenses === 1 ? "expense" : "expenses"}
             </KPText>
           </View>
 
-          <KPText style={styles.amount}>
-            ₹{props.total.toFixed(0)}
-          </KPText>
+          <View style={styles.totalWrap}>
+            <KPText style={styles.amount}>₹{props.total.toFixed(0)}</KPText>
+            <KPText style={styles.totalLabel}>total</KPText>
+          </View>
         </View>
       </KPCard>
     </TouchableOpacity>
@@ -119,32 +103,41 @@ export default function GroupCard(props: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: 16,
+    marginBottom: 14,
+    paddingVertical: 16,
   },
-
   row: {
     flexDirection: "row",
     alignItems: "center",
   },
-
   center: {
     flex: 1,
     marginLeft: 14,
   },
-
   name: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
+    color: Colors.text,
   },
-
   subtitle: {
     marginTop: 4,
     color: Colors.textSecondary,
+    fontSize: 12,
   },
-
+  totalWrap: {
+    alignItems: "flex-end",
+    marginLeft: 10,
+  },
   amount: {
     fontWeight: "800",
-    fontSize: 18,
+    fontSize: 17,
     color: Colors.primary,
+  },
+  totalLabel: {
+    marginTop: 2,
+    color: Colors.textSecondary,
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
 });

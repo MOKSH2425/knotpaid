@@ -1,6 +1,7 @@
 import { View, StyleSheet } from "react-native";
 
 import { KPText } from "@/components/ui";
+import { Colors } from "@/theme";
 
 type Props = {
   groups: number;
@@ -8,13 +9,7 @@ type Props = {
   expenses: number;
 };
 
-function Item({
-  title,
-  value,
-}: {
-  title: string;
-  value: number;
-}) {
+function Item({ title, value }: { title: string; value: number }) {
   return (
     <View style={styles.item}>
       <KPText style={styles.value}>{value}</KPText>
@@ -37,20 +32,23 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 25,
+    marginBottom: 24,
+    paddingVertical: 8,
   },
-
   item: {
     alignItems: "center",
     flex: 1,
+    paddingVertical: 10,
+    marginHorizontal: 4,
   },
-
   value: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "800",
+    color: Colors.text,
   },
-
   title: {
-    marginTop: 5,
+    marginTop: 4,
+    color: Colors.textSecondary,
+    fontSize: 12,
   },
 });

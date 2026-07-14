@@ -1,6 +1,6 @@
 import { TextInput, TextInputProps, StyleSheet } from "react-native";
 
-import { Colors, Radius, Spacing, Typography } from "@/theme";
+import { Colors, Radius, Spacing } from "@/theme";
 
 export function KPInput(props: TextInputProps) {
   return (
@@ -14,7 +14,7 @@ export function KPInput(props: TextInputProps) {
 
 const styles = StyleSheet.create({
   input: {
-    backgroundColor: Colors.surface2,
+    backgroundColor: Colors.surfaceLight,
 
     color: Colors.text,
 

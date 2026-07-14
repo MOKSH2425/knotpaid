@@ -1,24 +1,18 @@
-import {
-  TouchableOpacity,
-  StyleSheet,
-  Text,
-} from "react-native";
+import { TouchableOpacity, StyleSheet, Text, ViewStyle } from "react-native";
 
 import { Colors, Radius } from "@/theme";
 
 type Props = {
   title: string;
   onPress?: () => void;
+  style?: ViewStyle | ViewStyle[];
 };
 
-export function KPButton({
-  title,
-  onPress,
-}: Props) {
+export function KPButton({ title, onPress, style }: Props) {
   return (
     <TouchableOpacity
       activeOpacity={0.85}
-      style={styles.button}
+      style={[styles.button, style]}
       onPress={onPress}
     >
       <Text style={styles.text}>{title}</Text>

@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { StyleSheet, ScrollView, View } from "react-native";
+import { Alert, StyleSheet, ScrollView, View } from "react-native";
 
 import { KPButton, KPCard, KPText } from "@/components/ui";
 import { Colors, Spacing } from "@/theme";
@@ -9,12 +9,19 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
   getExpenses,
   deleteExpense,
-} from "@/features/expenses/services/expense.service"; // ✅ STEP 2
+} from "@/features/expenses/services/expense.service";
 import { getGroups } from "../services/group.service";
 import { calculateBalances } from "@/features/expenses/services/balance.service";
 import KPAvatar from "@/components/ui/KPAvatar";
 import { calculateSettlements } from "@/features/expenses/services/settlement.service";
 import KPFab from "@/components/common/KPFab";
+
+const GROUP_TYPE_LABELS: Record<string, string> = {
+  trip: "Trip",
+  home: "Home",
+  couple: "Couple",
+  other: "Other",
+};
 
 export default function GroupScreen() {
   const [group, setGroup] = useState<any>(null);
@@ -54,36 +61,53 @@ export default function GroupScreen() {
       <ScrollView
         style={styles.container}
         contentContainerStyle={{
-          paddingBottom: 120,
+          paddingBottom: 140,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <KPText style={styles.title}>{group.name}</KPText>
-
-        <KPCard style={{ marginBottom: 12 }}>
-          <KPText
-            style={{
-              fontSize: 16,
-              color: Colors.textSecondary,
-            }}
-          >
-            Total Expenses
+        <KPCard style={styles.headerCard}>
+          <KPText style={styles.title}>{group.name}</KPText>
+          <KPText style={styles.subtitle}>
+            {GROUP_TYPE_LABELS[group.type] || "Other"} group • {members.length}{" "}
+            members
           </KPText>
+        </KPCard>
 
-          <KPText
-            style={{
-              fontSize: 32,
-              fontWeight: "700",
-              marginTop: 8,
-            }}
-          >
+        <View style={{ height: 18 }} />
+
+        <View style={styles.actionRow}>
+          <KPButton
+            title="Manage Members"
+            onPress={() =>
+              router.push({
+                pathname: "/members",
+                params: { groupId },
+              })
+            }
+          />
+          <View style={{ width: 12 }} />
+          <KPButton
+            title="Rename"
+            onPress={() =>
+              router.push({
+                pathname: "/rename-group",
+                params: { groupId, name: group.name },
+              })
+            }
+          />
+        </View>
+
+        <View style={{ height: 24 }} />
+
+        <KPCard style={styles.summaryCard}>
+          <KPText style={styles.summaryLabel}>Total Expenses</KPText>
+          <KPText style={styles.summaryAmount}>
             ₹ {totalExpense.toFixed(2)}
           </KPText>
         </KPCard>
 
         <View style={{ height: 20 }} />
 
-        {/* Members Section */}
         <KPText style={styles.sectionTitle}>Members</KPText>
         {members.length === 0 ? (
           <KPCard>
@@ -110,7 +134,9 @@ export default function GroupScreen() {
                   <KPText style={{ fontWeight: "700", fontSize: 18 }}>
                     {member.name}
                   </KPText>
-                  <KPText style={{ color: "#9CA3AF" }}>Group Member</KPText>
+                  <KPText style={{ color: Colors.textSecondary }}>
+                    Group Member
+                  </KPText>
                 </View>
               </View>
             </KPCard>
@@ -119,7 +145,6 @@ export default function GroupScreen() {
 
         <View style={{ height: 25 }} />
 
-        {/* Expenses Section */}
         <KPText style={styles.sectionTitle}>Expenses</KPText>
         {expenses.length === 0 ? (
           <KPCard>
@@ -142,11 +167,10 @@ export default function GroupScreen() {
               <KPText
                 style={{
                   marginTop: 6,
-                  color: "#9CA3AF",
+                  color: Colors.textSecondary,
                 }}
               >
-                Paid by{" "}
-                {members.find((m) => m.id === expense.paidBy)?.name}
+                Paid by {members.find((m) => m.id === expense.paidBy)?.name}
               </KPText>
 
               <View style={{ height: 15 }} />
@@ -158,8 +182,10 @@ export default function GroupScreen() {
                     pathname: "/edit-expense",
                     params: {
                       expenseId: expense.id,
+                      groupId: group.id,
                       title: expense.title,
                       amount: expense.amount.toString(),
+                      paidBy: expense.paidBy,
                     },
                   })
                 }
@@ -170,34 +196,36 @@ export default function GroupScreen() {
               <KPButton
                 title="Delete Expense"
                 onPress={() => {
-                  deleteExpense(expense.id);
+                  Alert.alert("Delete Expense", `Delete "${expense.title}"?`, [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Delete",
+                      style: "destructive",
+                      onPress: () => {
+                        deleteExpense(expense.id);
 
-                  setExpenses(getExpenses(group.id));
-                  setBalances(calculateBalances(group.id));
-                  setSettlements(calculateSettlements(group.id));
+                        setExpenses(getExpenses(group.id));
+                        setBalances(calculateBalances(group.id));
+                        setSettlements(calculateSettlements(group.id));
+                      },
+                    },
+                  ]);
                 }}
               />
             </KPCard>
           ))
         )}
 
-        <KPText
-          style={{
-            fontSize: 22,
-            fontWeight: "700",
-            marginTop: 30,
-            marginBottom: 15,
-          }}
-        >
-          Balances
-        </KPText>
-
+        <KPText style={styles.sectionTitle}>Balances</KPText>
         {members.map((member) => (
           <KPCard key={member.id} style={{ marginBottom: 12 }}>
             <KPText style={{ fontWeight: "700" }}>{member.name}</KPText>
             <KPText
               style={{
-                color: (balances[member.id] ?? 0) >= 0 ? "#16A34A" : "#DC2626",
+                color:
+                  (balances[member.id] ?? 0) >= 0
+                    ? Colors.success
+                    : Colors.danger,
                 fontWeight: "700",
                 marginTop: 6,
               }}
@@ -209,18 +237,7 @@ export default function GroupScreen() {
           </KPCard>
         ))}
 
-        {/* Settlements Section */}
-        <KPText
-          style={{
-            fontSize: 22,
-            fontWeight: "700",
-            marginTop: 30,
-            marginBottom: 15,
-          }}
-        >
-          Settlements
-        </KPText>
-
+        <KPText style={styles.sectionTitle}>Settlements</KPText>
         {settlements.length === 0 ? (
           <KPCard>
             <KPText>🎉 Everyone is settled.</KPText>
@@ -239,7 +256,7 @@ export default function GroupScreen() {
                 <KPText
                   style={{
                     marginTop: 6,
-                    color: "#22C55E",
+                    color: Colors.success,
                     fontWeight: "700",
                   }}
                 >
@@ -276,14 +293,39 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     padding: Spacing.lg,
   },
+  headerCard: {
+    paddingVertical: 18,
+    marginBottom: 4,
+  },
   title: {
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  subtitle: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+  },
+  summaryCard: {
+    marginBottom: 12,
+    paddingVertical: 18,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  summaryAmount: {
     fontSize: 30,
     fontWeight: "700",
-    marginBottom: 20,
+    marginTop: 8,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "600",
     marginBottom: 15,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

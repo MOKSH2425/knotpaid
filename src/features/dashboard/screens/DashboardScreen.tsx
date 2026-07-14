@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 
 import DashboardHeader from "../components/DashboardHeader";
 import BalanceCard from "../components/BalanceCard";
 import StatsRow from "../components/StatsRow";
 
 import KPEmptyState from "@/components/common/KPEmptyState";
-import { KPButton, KPCard, KPText } from "@/components/ui";
+import { KPText } from "@/components/ui";
 
 import { Colors } from "@/theme";
 
@@ -25,9 +25,11 @@ export default function DashboardScreen() {
   const [memberCount, setMemberCount] = useState(0);
   const [expenseCount, setExpenseCount] = useState(0);
 
-  useEffect(() => {
-    load();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, []),
+  );
 
   function load() {
     const data = getGroups();
@@ -57,7 +59,11 @@ export default function DashboardScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <DashboardHeader />
 
         <BalanceCard amount={total} />
@@ -107,12 +113,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  content: {
     paddingHorizontal: 20,
+    paddingBottom: 120,
   },
   heading: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
-    marginBottom: 18,
+    marginBottom: 14,
     color: Colors.text,
   },
   card: {
