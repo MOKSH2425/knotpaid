@@ -1,27 +1,26 @@
-import {
-  Text,
-  TextProps,
-  StyleSheet,
-} from "react-native";
+import { Text, TextProps } from "react-native";
 
-import { Colors } from "@/theme";
+import { useTheme } from "@/theme";
 
 export function KPText({
   style,
   ...props
 }: TextProps) {
+  const { colors } = useTheme();
+
   return (
     <Text
       {...props}
-      style={[styles.text, style]}
+      style={[
+        {
+          color: colors.text,
+
+          fontSize: 16,
+
+          fontWeight: "500",
+        },
+        style,
+      ]}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  text: {
-    color: Colors.text,
-
-    fontSize: 16,
-  },
-});

@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { Alert, StyleSheet, ScrollView, View } from "react-native";
 
 import { KPButton, KPCard, KPText } from "@/components/ui";
-import { Colors, Spacing } from "@/theme";
+import { Colors, Spacing, useTheme } from "@/theme";
 
 import { getMembers } from "@/features/members/services/member.service";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -24,6 +24,9 @@ const GROUP_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function GroupScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const [group, setGroup] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -134,7 +137,7 @@ export default function GroupScreen() {
                   <KPText style={{ fontWeight: "700", fontSize: 18 }}>
                     {member.name}
                   </KPText>
-                  <KPText style={{ color: Colors.textSecondary }}>
+                  <KPText style={{ color: colors.textSecondary }}>
                     Group Member
                   </KPText>
                 </View>
@@ -167,7 +170,7 @@ export default function GroupScreen() {
               <KPText
                 style={{
                   marginTop: 6,
-                  color: Colors.textSecondary,
+                  color: colors.textSecondary,
                 }}
               >
                 Paid by {members.find((m) => m.id === expense.paidBy)?.name}
@@ -195,6 +198,8 @@ export default function GroupScreen() {
 
               <KPButton
                 title="Delete Expense"
+                textColor={colors.white}
+                style={{ backgroundColor: colors.danger }}
                 onPress={() => {
                   Alert.alert("Delete Expense", `Delete "${expense.title}"?`, [
                     { text: "Cancel", style: "cancel" },
@@ -224,8 +229,8 @@ export default function GroupScreen() {
               style={{
                 color:
                   (balances[member.id] ?? 0) >= 0
-                    ? Colors.success
-                    : Colors.danger,
+                    ? colors.success
+                    : colors.danger,
                 fontWeight: "700",
                 marginTop: 6,
               }}
@@ -256,7 +261,7 @@ export default function GroupScreen() {
                 <KPText
                   style={{
                     marginTop: 6,
-                    color: Colors.success,
+                    color: colors.success,
                     fontWeight: "700",
                   }}
                 >
@@ -287,45 +292,47 @@ export default function GroupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    padding: Spacing.lg,
-  },
-  headerCard: {
-    paddingVertical: 18,
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  subtitle: {
-    color: Colors.textSecondary,
-    fontSize: 15,
-  },
-  summaryCard: {
-    marginBottom: 12,
-    paddingVertical: 18,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-  },
-  summaryAmount: {
-    fontSize: 30,
-    fontWeight: "700",
-    marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 15,
-  },
-  actionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-});
+function getStyles(colors: typeof Colors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: Spacing.lg,
+    },
+    headerCard: {
+      paddingVertical: 18,
+      marginBottom: 4,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "700",
+      marginBottom: 6,
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: 15,
+    },
+    summaryCard: {
+      marginBottom: 12,
+      paddingVertical: 18,
+    },
+    summaryLabel: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    summaryAmount: {
+      fontSize: 30,
+      fontWeight: "700",
+      marginTop: 8,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: "600",
+      marginBottom: 15,
+    },
+    actionRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+  });
+}

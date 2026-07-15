@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
-import { Colors, Spacing } from "@/theme";
+import { Colors, Spacing, useTheme } from "@/theme";
 import { createGroup, GroupType } from "../services/group.service";
 import { router } from "expo-router";
 
@@ -26,6 +26,9 @@ const GROUP_TYPES: Array<{
 ];
 
 export default function CreateGroupScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const [groupName, setGroupName] = useState("");
   const [groupType, setGroupType] = useState<GroupType>("other");
 
@@ -77,6 +80,9 @@ export default function CreateGroupScreen() {
                 <KPButton
                   title={item.label}
                   onPress={() => setGroupType(item.key)}
+                  textColor={
+                    groupType === item.key ? colors.onPrimary : colors.text
+                  }
                   style={
                     groupType === item.key
                       ? styles.typeSelected
@@ -95,7 +101,7 @@ export default function CreateGroupScreen() {
                 <Ionicons
                   name={selectedType?.icon ?? "layers"}
                   size={18}
-                  color={Colors.white}
+                  color={colors.onPrimary}
                 />
               </View>
 
@@ -117,78 +123,80 @@ export default function CreateGroupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    flexGrow: 1,
-    padding: Spacing.lg,
-    justifyContent: "center",
-  },
-  formCard: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "800",
-    marginBottom: 8,
-    color: Colors.white,
-  },
-  subtitle: {
-    color: Colors.textSecondary,
-    lineHeight: 24,
-    fontSize: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Colors.text,
-    marginBottom: 14,
-  },
-  typeRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginHorizontal: -5,
-  },
-  typeItem: {
-    flex: 1,
-    minWidth: 100,
-    paddingHorizontal: 5,
-    marginBottom: 10,
-  },
-  typeButton: {
-    backgroundColor: Colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  typeSelected: {
-    backgroundColor: Colors.primary,
-  },
-  previewCard: {
-    padding: 14,
-    backgroundColor: Colors.surfaceLight,
-  },
-  previewRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  previewIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  previewLabel: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  previewText: {
-    color: Colors.text,
-    fontWeight: "700",
-  },
-});
+function getStyles(colors: typeof Colors) {
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      padding: Spacing.lg,
+      justifyContent: "center",
+    },
+    formCard: {
+      padding: 20,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: "800",
+      marginBottom: 8,
+      color: colors.text,
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      lineHeight: 24,
+      fontSize: 16,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.text,
+      marginBottom: 14,
+    },
+    typeRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginHorizontal: -5,
+    },
+    typeItem: {
+      flex: 1,
+      minWidth: 100,
+      paddingHorizontal: 5,
+      marginBottom: 10,
+    },
+    typeButton: {
+      backgroundColor: colors.surfaceLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    typeSelected: {
+      backgroundColor: colors.primary,
+    },
+    previewCard: {
+      padding: 14,
+      backgroundColor: colors.surfaceLight,
+    },
+    previewRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    previewIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    previewLabel: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginBottom: 2,
+    },
+    previewText: {
+      color: colors.text,
+      fontWeight: "700",
+    },
+  });
+}

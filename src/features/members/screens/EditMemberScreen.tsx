@@ -10,11 +10,14 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
-import { Colors, Spacing } from "@/theme";
+import { Colors, Spacing, useTheme } from "@/theme";
 
 import { updateMember } from "../services/member.service";
 
 export default function EditMemberScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const { memberId, name, groupId } = useLocalSearchParams<{
     memberId: string;
     name: string;
@@ -75,27 +78,29 @@ export default function EditMemberScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    flexGrow: 1,
-    padding: Spacing.lg,
-  },
-  card: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    marginBottom: 8,
-    color: Colors.white,
-  },
-  subtitle: {
-    color: Colors.textSecondary,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-});
+function getStyles(colors: typeof Colors) {
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      padding: Spacing.lg,
+    },
+    card: {
+      padding: 20,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "800",
+      marginBottom: 8,
+      color: colors.text,
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: 15,
+      lineHeight: 22,
+    },
+  });
+}

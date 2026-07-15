@@ -1,33 +1,27 @@
-import { TextInput, TextInputProps, StyleSheet } from "react-native";
-
-import { Colors, Radius, Spacing } from "@/theme";
+import { TextInput, TextInputProps } from "react-native";
+import { Radius, Spacing, useTheme } from "@/theme";
 
 export function KPInput(props: TextInputProps) {
+  const { colors } = useTheme();
+
   return (
     <TextInput
-      placeholderTextColor={Colors.textSecondary}
+      placeholderTextColor={colors.textSecondary}
+      selectionColor={colors.primary}
       {...props}
-      style={[styles.input, props.style]}
+      style={[
+        {
+          height: 56,
+          backgroundColor: colors.surface,
+          color: colors.text,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.xl,
+          paddingHorizontal: Spacing.lg,
+          fontSize: 16,
+        },
+        props.style,
+      ]}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  input: {
-    backgroundColor: Colors.surfaceLight,
-
-    color: Colors.text,
-
-    borderWidth: 1,
-
-    borderColor: Colors.border,
-
-    borderRadius: Radius.lg,
-
-    paddingHorizontal: Spacing.lg,
-
-    paddingVertical: 16,
-
-    fontSize: 16,
-  },
-});

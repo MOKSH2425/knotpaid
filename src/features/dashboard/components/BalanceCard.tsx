@@ -1,6 +1,6 @@
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 
-import { Colors, Radius, Shadows } from "@/theme";
+import { Radius, Shadows, useTheme } from "@/theme";
 import { KPText } from "@/components/ui";
 
 type Props = {
@@ -8,38 +8,33 @@ type Props = {
 };
 
 export default function BalanceCard({ amount }: Props) {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.card}>
-      <KPText style={styles.label}>Total Expenses</KPText>
-      <KPText style={styles.amount}>₹ {amount.toFixed(2)}</KPText>
-      <KPText style={styles.subtext}>Across all groups and members</KPText>
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        padding: 24,
+        borderRadius: Radius.xl,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: colors.border,
+        ...Shadows.md,
+      }}
+    >
+      <KPText
+        style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 14 }}
+      >
+        Total Expenses
+      </KPText>
+      <KPText style={{ fontSize: 34, fontWeight: "800", color: colors.text }}>
+        ₹ {amount.toFixed(2)}
+      </KPText>
+      <KPText
+        style={{ marginTop: 8, color: colors.textSecondary, fontSize: 13 }}
+      >
+        Across all groups and members
+      </KPText>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.surface,
-    padding: 24,
-    borderRadius: Radius.xl,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.md,
-  },
-  label: {
-    color: Colors.textSecondary,
-    marginBottom: 8,
-    fontSize: 14,
-  },
-  amount: {
-    fontSize: 34,
-    fontWeight: "800",
-    color: Colors.text,
-  },
-  subtext: {
-    marginTop: 8,
-    color: Colors.textSecondary,
-    fontSize: 13,
-  },
-});

@@ -9,7 +9,7 @@ import StatsRow from "../components/StatsRow";
 import KPEmptyState from "@/components/common/KPEmptyState";
 import { KPText } from "@/components/ui";
 
-import { Colors } from "@/theme";
+import { useTheme } from "@/theme";
 
 import { getGroups } from "@/features/groups/services/group.service";
 import { getMembers } from "@/features/members/services/member.service";
@@ -20,6 +20,7 @@ import KPFab from "@/components/common/KPFab";
 import GroupCard from "../components/GroupCard";
 
 export default function DashboardScreen() {
+  const { colors } = useTheme();
   const [groups, setGroups] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
@@ -60,7 +61,7 @@ export default function DashboardScreen() {
   return (
     <>
       <ScrollView
-        style={styles.container}
+        style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -110,10 +111,6 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
   content: {
     paddingHorizontal: 20,
     paddingBottom: 120,
@@ -122,7 +119,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 14,
-    color: Colors.text,
   },
   card: {
     marginBottom: 18,
@@ -133,7 +129,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   member: {
-    color: Colors.textSecondary,
     marginBottom: 18,
   },
 });

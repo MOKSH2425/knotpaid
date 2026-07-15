@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 
 import { KPCard, KPText } from "@/components/ui";
 import KPAvatar from "@/components/ui/KPAvatar";
 
-import { Colors } from "@/theme";
+import { useTheme } from "@/theme";
 
 import { deleteGroup } from "@/features/groups/services/group.service";
 
@@ -19,6 +19,7 @@ type Props = {
 
 export default function GroupCard(props: Props) {
   const [loading, setLoading] = useState(false);
+  const { colors } = useTheme();
 
   function openGroup() {
     router.push({
@@ -79,65 +80,48 @@ export default function GroupCard(props: Props) {
         ]);
       }}
     >
-      <KPCard style={styles.card}>
-        <View style={styles.row}>
+      <KPCard style={{ marginBottom: 14, paddingVertical: 16 }}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
           <KPAvatar name={props.name} />
 
-          <View style={styles.center}>
-            <KPText style={styles.name}>{props.name}</KPText>
-            <KPText style={styles.subtitle}>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <KPText
+              style={{ fontSize: 18, fontWeight: "700", color: colors.text }}
+            >
+              {props.name}
+            </KPText>
+            <KPText
+              style={{
+                marginTop: 4,
+                color: colors.textSecondary,
+                fontSize: 12,
+              }}
+            >
               {props.members} {props.members === 1 ? "member" : "members"} •{" "}
               {props.expenses} {props.expenses === 1 ? "expense" : "expenses"}
             </KPText>
           </View>
 
-          <View style={styles.totalWrap}>
-            <KPText style={styles.amount}>₹{props.total.toFixed(0)}</KPText>
-            <KPText style={styles.totalLabel}>total</KPText>
+          <View style={{ alignItems: "flex-end", marginLeft: 10 }}>
+            <KPText
+              style={{ fontWeight: "800", fontSize: 17, color: colors.primary }}
+            >
+              ₹{props.total.toFixed(0)}
+            </KPText>
+            <KPText
+              style={{
+                marginTop: 2,
+                color: colors.textSecondary,
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: 0.6,
+              }}
+            >
+              total
+            </KPText>
           </View>
         </View>
       </KPCard>
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    marginBottom: 14,
-    paddingVertical: 16,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  center: {
-    flex: 1,
-    marginLeft: 14,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.text,
-  },
-  subtitle: {
-    marginTop: 4,
-    color: Colors.textSecondary,
-    fontSize: 12,
-  },
-  totalWrap: {
-    alignItems: "flex-end",
-    marginLeft: 10,
-  },
-  amount: {
-    fontWeight: "800",
-    fontSize: 17,
-    color: Colors.primary,
-  },
-  totalLabel: {
-    marginTop: 2,
-    color: Colors.textSecondary,
-    fontSize: 11,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-});

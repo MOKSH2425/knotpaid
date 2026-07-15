@@ -10,12 +10,15 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
-import { Colors, Spacing } from "@/theme";
+import { Colors, Spacing, useTheme } from "@/theme";
 
 import { createExpense } from "../services/expense.service";
 import { getMembers } from "@/features/members/services/member.service";
 
 export default function AddExpenseScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
 
@@ -85,6 +88,7 @@ export default function AddExpenseScreen() {
               <KPButton
                 title={paidBy === member.id ? `✓ ${member.name}` : member.name}
                 onPress={() => setPaidBy(member.id)}
+                textColor={paidBy === member.id ? colors.onPrimary : colors.text}
                 style={
                   paidBy === member.id
                     ? styles.payerSelected
@@ -145,61 +149,63 @@ export default function AddExpenseScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    flexGrow: 1,
-    padding: Spacing.lg,
-    justifyContent: "center",
-  },
-  formCard: {
-    padding: 20,
-  },
-  heading: {
-    fontSize: 32,
-    fontWeight: "800",
-    marginBottom: 8,
-    color: Colors.white,
-  },
-  subtitle: {
-    color: Colors.textSecondary,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Colors.text,
-    marginBottom: 10,
-  },
-  previewCard: {
-    padding: 14,
-    backgroundColor: Colors.surfaceLight,
-  },
-  previewLabel: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  previewTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.text,
-  },
-  previewAmount: {
-    marginTop: 4,
-    color: Colors.secondary,
-    fontWeight: "700",
-  },
-  payerButton: {
-    backgroundColor: Colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  payerSelected: {
-    backgroundColor: Colors.primary,
-  },
-});
+function getStyles(colors: typeof Colors) {
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      padding: Spacing.lg,
+      justifyContent: "center",
+    },
+    formCard: {
+      padding: 20,
+    },
+    heading: {
+      fontSize: 32,
+      fontWeight: "800",
+      marginBottom: 8,
+      color: colors.text,
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: 15,
+      lineHeight: 22,
+    },
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: colors.text,
+      marginBottom: 10,
+    },
+    previewCard: {
+      padding: 14,
+      backgroundColor: colors.surfaceLight,
+    },
+    previewLabel: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginBottom: 4,
+    },
+    previewTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    previewAmount: {
+      marginTop: 4,
+      color: colors.secondary,
+      fontWeight: "700",
+    },
+    payerButton: {
+      backgroundColor: colors.surfaceLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    payerSelected: {
+      backgroundColor: colors.primary,
+    },
+  });
+}

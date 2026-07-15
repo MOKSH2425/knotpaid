@@ -1,24 +1,22 @@
 import { TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Colors } from "@/theme";
+import { useTheme } from "@/theme";
 
 type Props = {
   onPress: () => void;
 };
 
 export default function KPFab({ onPress }: Props) {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
-      style={styles.fab}
+      style={[styles.fab, { backgroundColor: colors.primary }]}
       activeOpacity={0.9}
       onPress={onPress}
     >
-      <Ionicons
-        name="add"
-        size={30}
-        color="white"
-      />
+      <Ionicons name="add" size={30} color={colors.onPrimary} />
     </TouchableOpacity>
   );
 }
@@ -33,8 +31,6 @@ const styles = StyleSheet.create({
     height: 62,
 
     borderRadius: 31,
-
-    backgroundColor: Colors.primary,
 
     justifyContent: "center",
     alignItems: "center",

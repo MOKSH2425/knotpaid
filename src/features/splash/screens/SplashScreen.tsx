@@ -1,15 +1,14 @@
 import { useEffect } from "react";
 import { Image, StyleSheet, View } from "react-native";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-} from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { router } from "expo-router";
 
-import { Colors } from "@/theme";
+import { useTheme } from "@/theme";
 import { KPText } from "@/components/ui";
 
 export default function SplashScreen() {
+  const { colors } = useTheme();
+
   useEffect(() => {
     const timer = setTimeout(() => {
       router.replace("/");
@@ -19,7 +18,7 @@ export default function SplashScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Animated.Image
         entering={FadeIn.duration(900)}
         source={require("../../../assets/branding/logo.png")}
@@ -27,11 +26,11 @@ export default function SplashScreen() {
       />
 
       <Animated.View entering={FadeInDown.delay(500)}>
-        <KPText style={styles.title}>
+        <KPText style={[styles.title, { color: colors.text }]}>
           KnotPaid
         </KPText>
 
-        <KPText style={styles.subtitle}>
+        <KPText style={[styles.subtitle, { color: colors.textSecondary }]}>
           Split smarter. Settle easier.
         </KPText>
       </Animated.View>
@@ -42,7 +41,6 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -56,13 +54,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 34,
     fontWeight: "800",
-    color: Colors.text,
     textAlign: "center",
   },
 
   subtitle: {
     marginTop: 8,
-    color: Colors.textSecondary,
     textAlign: "center",
     fontSize: 16,
   },

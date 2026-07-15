@@ -10,7 +10,7 @@ import {
 import { useFocusEffect, router, useLocalSearchParams } from "expo-router";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
-import { Colors, Spacing } from "@/theme";
+import { Colors, Spacing, useTheme } from "@/theme";
 
 import {
   createMember,
@@ -20,6 +20,9 @@ import {
 } from "../services/member.service";
 
 export default function MembersScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const [members, setMembers] = useState<
     {
       id: string;
@@ -129,6 +132,7 @@ export default function MembersScreen() {
                         },
                       })
                     }
+                    textColor={colors.text}
                     style={styles.secondaryButton}
                   />
                 </View>
@@ -136,6 +140,7 @@ export default function MembersScreen() {
                   <KPButton
                     title="Delete"
                     onPress={() => confirmDelete(member.id, member.name)}
+                    textColor={colors.white}
                     style={styles.dangerButton}
                   />
                 </View>
@@ -160,59 +165,61 @@ export default function MembersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    flexGrow: 1,
-    padding: Spacing.lg,
-  },
-  heroCard: {
-    paddingVertical: 18,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    marginBottom: 8,
-    color: Colors.white,
-  },
-  subtitle: {
-    color: Colors.textSecondary,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  memberCard: {
-    paddingVertical: 18,
-    marginBottom: 12,
-  },
-  memberName: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 18,
-  },
-  actionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  actionButtonWrap: {
-    flex: 1,
-  },
-  secondaryButton: {
-    backgroundColor: Colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  dangerButton: {
-    backgroundColor: Colors.danger,
-  },
-  emptyCard: {
-    alignItems: "center",
-    paddingVertical: 20,
-  },
-  emptyText: {
-    color: Colors.textSecondary,
-  },
-});
+function getStyles(colors: typeof Colors) {
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      padding: Spacing.lg,
+    },
+    heroCard: {
+      paddingVertical: 18,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "800",
+      marginBottom: 8,
+      color: colors.text,
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: 15,
+      lineHeight: 22,
+    },
+    memberCard: {
+      paddingVertical: 18,
+      marginBottom: 12,
+    },
+    memberName: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 18,
+    },
+    actionRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: 10,
+    },
+    actionButtonWrap: {
+      flex: 1,
+    },
+    secondaryButton: {
+      backgroundColor: colors.surfaceLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    dangerButton: {
+      backgroundColor: colors.danger,
+    },
+    emptyCard: {
+      alignItems: "center",
+      paddingVertical: 20,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+    },
+  });
+}

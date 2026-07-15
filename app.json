@@ -4,7 +4,7 @@
     "slug": "KnotPaid",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./src/assets/branding/logo.png",
     "scheme": "knotpaid",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -31,9 +31,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#0F1512",
+          "image": "./src/assets/branding/logo.png",
+          "imageWidth": 120
         }
       ],
       "expo-sqlite"

@@ -1,18 +1,45 @@
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 
 import { KPButton, KPText } from "@/components/ui";
-import { Colors } from "@/theme";
+import { useTheme } from "@/theme";
 
 type Props = {
   onPress: () => void;
 };
 
 export default function KPEmptyState({ onPress }: Props) {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
-      <KPText style={styles.icon}>💸</KPText>
-      <KPText style={styles.title}>No Groups Yet</KPText>
-      <KPText style={styles.subtitle}>
+    <View
+      style={{
+        marginTop: 48,
+        alignItems: "center",
+        paddingVertical: 28,
+        paddingHorizontal: 20,
+        borderRadius: 24,
+        backgroundColor: colors.surface,
+      }}
+    >
+      <KPText style={{ fontSize: 44 }}>💸</KPText>
+      <KPText
+        style={{
+          marginTop: 16,
+          fontSize: 22,
+          fontWeight: "700",
+          color: colors.text,
+        }}
+      >
+        No Groups Yet
+      </KPText>
+      <KPText
+        style={{
+          marginTop: 8,
+          textAlign: "center",
+          color: colors.textSecondary,
+          lineHeight: 20,
+        }}
+      >
         Create your first group and start splitting expenses in seconds.
       </KPText>
 
@@ -22,29 +49,3 @@ export default function KPEmptyState({ onPress }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 48,
-    alignItems: "center",
-    paddingVertical: 28,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    backgroundColor: Colors.surface,
-  },
-  icon: {
-    fontSize: 44,
-  },
-  title: {
-    marginTop: 16,
-    fontSize: 22,
-    fontWeight: "700",
-    color: Colors.text,
-  },
-  subtitle: {
-    marginTop: 8,
-    textAlign: "center",
-    color: Colors.textSecondary,
-    lineHeight: 20,
-  },
-});
