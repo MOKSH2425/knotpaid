@@ -44,27 +44,27 @@ export const LightColors = {
 };
 
 export const DarkColors = {
-  background: "#151B17",
-  surface: "#1D2721",
-  surfaceLight: "#28352D",
-  surfaceElevated: "#2E3A31",
+  background: "#10140F",
+  surface: "#1C231B",
+  surfaceLight: "#262F24",
+  surfaceElevated: "#333F30",
 
-  primary: BrandTan,
-  secondary: BrandGreen,
-  accent: "#E9D7BE",
+  primary: "#D3AD7C",
+  secondary: "#527260",
+  accent: "#EDD9B8",
 
-  onPrimary: "#231A10",
-  onSecondary: "#FDF9EC",
-  onAccent: "#231A10",
+  onPrimary: "#241B10",
+  onSecondary: "#FBF6EA",
+  onAccent: "#241B10",
 
   white: "#FFFFFF",
-  text: "#FDF9EC",
-  textSecondary: "#B9C1BA",
-  border: "#35453C",
+  text: "#F6F1E4",
+  textSecondary: "#A7B3A2",
+  border: "#46543F",
 
-  success: "#61C687",
-  warning: "#E6B85A",
-  danger: "#E46A6A",
+  success: "#5FC98A",
+  warning: "#F0C065",
+  danger: "#F1685F",
 };
 
 export const Colors = {

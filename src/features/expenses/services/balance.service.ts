@@ -1,3 +1,4 @@
+import { db } from "@/database/db";
 import { getExpenses } from "./expense.service";
 import { getMembers } from "@/features/members/services/member.service";
 
@@ -12,12 +13,23 @@ export function calculateBalances(groupId: string) {
   });
 
   expenses.forEach((expense) => {
-    const share = expense.amount / members.length;
+    // The payer is credited the full amount regardless of who split it.
+    balances[expense.paidBy] = (balances[expense.paidBy] ?? 0) + expense.amount;
 
-    balances[expense.paidBy] += expense.amount;
+    // Each participant is debited their actual share — read from
+    // expense_shares, not assumed to be "everyone in the group." A member
+    // who wasn't part of this particular expense is correctly untouched.
+    const shares = db.getAllSync<{ memberId: string; shareAmount: number }>(
+      `
+        SELECT memberId, shareAmount
+        FROM expense_shares
+        WHERE expenseId=?
+      `,
+      [expense.id],
+    );
 
-    members.forEach((member) => {
-      balances[member.id] -= share;
+    shares.forEach((share) => {
+      balances[share.memberId] = (balances[share.memberId] ?? 0) - share.shareAmount;
     });
   });
 

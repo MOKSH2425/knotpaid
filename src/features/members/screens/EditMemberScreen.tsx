@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,12 +10,18 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
 import { Colors, Spacing, useTheme } from "@/theme";
+import { useDialog } from "@/providers/DialogProvider";
+import { useSubmitGuard } from "@/hooks/useSubmitGuard";
+import { useTopInset } from "@/hooks/useTopInset";
 
-import { updateMember } from "../services/member.service";
+import { memberNameExists, updateMember } from "../services/member.service";
 
 export default function EditMemberScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const dialog = useDialog();
+  const guard = useSubmitGuard();
+  const topInset = useTopInset();
 
   const { memberId, name, groupId } = useLocalSearchParams<{
     memberId: string;
@@ -26,11 +31,22 @@ export default function EditMemberScreen() {
 
   const [value, setValue] = useState(name ?? "");
 
-  function save() {
+  const save = guard(async () => {
     const trimmedName = value.trim();
 
     if (!trimmedName) {
-      Alert.alert("Member name required", "Please enter a valid member name.");
+      await dialog.alert({
+        title: "Member name required",
+        message: "Please enter a valid member name.",
+      });
+      return;
+    }
+
+    if (groupId && memberNameExists(groupId, trimmedName, memberId)) {
+      await dialog.alert({
+        title: "Name already in this group",
+        message: `Someone named "${trimmedName}" is already in this group. Try adding a last initial or nickname to tell them apart.`,
+      });
       return;
     }
 
@@ -44,11 +60,11 @@ export default function EditMemberScreen() {
     } else {
       router.back();
     }
-  }
+  });
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { paddingTop: topInset }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView

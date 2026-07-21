@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -10,7 +9,12 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
+import { KPDateTimeField } from "@/components/common/KPDateTimeField";
+import { KPParticipantSelector } from "@/components/common/KPParticipantSelector";
 import { Colors, Spacing, useTheme } from "@/theme";
+import { useDialog } from "@/providers/DialogProvider";
+import { useSubmitGuard } from "@/hooks/useSubmitGuard";
+import { useTopInset } from "@/hooks/useTopInset";
 
 import { createExpense } from "../services/expense.service";
 import { getMembers } from "@/features/members/services/member.service";
@@ -18,9 +22,13 @@ import { getMembers } from "@/features/members/services/member.service";
 export default function AddExpenseScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const dialog = useDialog();
+  const guard = useSubmitGuard();
+  const topInset = useTopInset();
 
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
+  const [expenseDate, setExpenseDate] = useState(new Date());
 
   const { groupId } = useLocalSearchParams<{
     groupId: string;
@@ -28,6 +36,7 @@ export default function AddExpenseScreen() {
 
   const [members, setMembers] = useState<any[]>([]);
   const [paidBy, setPaidBy] = useState("");
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!groupId) return;
@@ -37,12 +46,31 @@ export default function AddExpenseScreen() {
 
     if (list.length > 0) {
       setPaidBy(list[0].id);
+      // Default to everyone splitting it — matches the old always-split-
+      // among-everyone behavior unless you deliberately narrow it down.
+      setParticipantIds(list.map((member) => member.id));
     }
   }, [groupId]);
 
+  function toggleParticipant(memberId: string) {
+    setParticipantIds((current) =>
+      current.includes(memberId)
+        ? current.filter((id) => id !== memberId)
+        : [...current, memberId],
+    );
+  }
+
+  const parsedAmount = Number(amount);
+  const perPersonShare =
+    participantIds.length > 0 &&
+    Number.isFinite(parsedAmount) &&
+    parsedAmount > 0
+      ? parsedAmount / participantIds.length
+      : null;
+
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { paddingTop: topInset }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
@@ -70,6 +98,11 @@ export default function AddExpenseScreen() {
 
           <View style={{ height: 16 }} />
 
+          <KPText style={styles.sectionTitle}>When</KPText>
+          <KPDateTimeField value={expenseDate} onChange={setExpenseDate} />
+
+          <View style={{ height: 16 }} />
+
           <KPCard style={styles.previewCard}>
             <KPText style={styles.previewLabel}>Preview</KPText>
             <KPText style={styles.previewTitle}>
@@ -78,6 +111,12 @@ export default function AddExpenseScreen() {
             <KPText style={styles.previewAmount}>
               {amount ? `₹ ${amount}` : "Enter an amount"}
             </KPText>
+            {perPersonShare !== null ? (
+              <KPText style={styles.previewShare}>
+                ₹{perPersonShare.toFixed(2)} each • {participantIds.length}{" "}
+                {participantIds.length === 1 ? "person" : "people"}
+              </KPText>
+            ) : null}
           </KPCard>
 
           <View style={{ height: 24 }} />
@@ -100,33 +139,55 @@ export default function AddExpenseScreen() {
 
           <View style={{ height: 24 }} />
 
+          <KPText style={styles.sectionTitle}>Split Between</KPText>
+          <KPText style={styles.helperText}>
+            Only the people you select here will owe a share of this expense.
+          </KPText>
+          <View style={{ height: 10 }} />
+          <KPParticipantSelector
+            members={members}
+            selectedIds={participantIds}
+            onToggle={toggleParticipant}
+          />
+
+          <View style={{ height: 24 }} />
+
           <KPButton
             title="Save Expense"
-            onPress={() => {
+            onPress={guard(async () => {
               const trimmedTitle = title.trim();
               const parsedAmount = Number(amount);
 
               if (!trimmedTitle) {
-                Alert.alert(
-                  "Expense title required",
-                  "Please enter an expense title.",
-                );
+                await dialog.alert({
+                  title: "Expense title required",
+                  message: "Please enter an expense title.",
+                });
                 return;
               }
 
               if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-                Alert.alert(
-                  "Invalid amount",
-                  "Please enter an amount greater than zero.",
-                );
+                await dialog.alert({
+                  title: "Invalid amount",
+                  message: "Please enter an amount greater than zero.",
+                });
                 return;
               }
 
               if (!paidBy) {
-                Alert.alert(
-                  "Payer required",
-                  "Please select who paid for this expense.",
-                );
+                await dialog.alert({
+                  title: "Payer required",
+                  message: "Please select who paid for this expense.",
+                });
+                return;
+              }
+
+              if (participantIds.length === 0) {
+                await dialog.alert({
+                  title: "Select who's splitting this",
+                  message:
+                    "Choose at least one person under Split Between.",
+                });
                 return;
               }
 
@@ -135,13 +196,15 @@ export default function AddExpenseScreen() {
                 trimmedTitle,
                 parsedAmount,
                 paidBy,
+                expenseDate.toISOString(),
+                participantIds,
               );
 
               router.replace({
                 pathname: "/group",
                 params: { groupId },
               });
-            }}
+            })}
           />
         </KPCard>
       </ScrollView>
@@ -180,6 +243,11 @@ function getStyles(colors: typeof Colors) {
       color: colors.text,
       marginBottom: 10,
     },
+    helperText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      lineHeight: 18,
+    },
     previewCard: {
       padding: 14,
       backgroundColor: colors.surfaceLight,
@@ -198,6 +266,11 @@ function getStyles(colors: typeof Colors) {
       marginTop: 4,
       color: colors.secondary,
       fontWeight: "700",
+    },
+    previewShare: {
+      marginTop: 6,
+      color: colors.textSecondary,
+      fontSize: 13,
     },
     payerButton: {
       backgroundColor: colors.surfaceLight,

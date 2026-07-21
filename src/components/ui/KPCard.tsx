@@ -18,7 +18,7 @@ export function KPCard({ children, style }: Props) {
           backgroundColor: isDark ? colors.surfaceElevated : colors.surface,
           borderRadius: Radius.xl,
           padding: 20,
-          borderWidth: isDark ? 0 : 1,
+          borderWidth: 1,
           borderColor: colors.border,
           ...(isDark ? {} : Shadows.card),
         },

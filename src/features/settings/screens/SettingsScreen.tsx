@@ -4,6 +4,8 @@ import { router } from "expo-router";
 
 import { KPButton, KPCard, KPText } from "@/components/ui";
 import { Spacing, useTheme } from "@/theme";
+import { haptics } from "@/utils/haptics";
+import { useTopInset } from "@/hooks/useTopInset";
 import {
   getThemeMode,
   setThemeMode,
@@ -12,6 +14,7 @@ import type { ThemeMode } from "@/theme/colors";
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
+  const topInset = useTopInset();
   const [themeMode, setTheme] = useState<ThemeMode>("dark");
 
   useEffect(() => {
@@ -19,6 +22,7 @@ export default function SettingsScreen() {
   }, []);
 
   function toggleTheme(value: boolean) {
+    haptics.selection();
     const nextMode: ThemeMode = value ? "light" : "dark";
     setTheme(nextMode);
     setThemeMode(nextMode);
@@ -30,7 +34,7 @@ export default function SettingsScreen() {
       contentContainerStyle={{
         flexGrow: 1,
         padding: Spacing.lg,
-        paddingTop: 40,
+        paddingTop: topInset,
       }}
     >
       <KPText

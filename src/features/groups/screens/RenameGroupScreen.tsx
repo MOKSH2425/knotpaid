@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,11 +10,17 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
 import { Colors, Spacing, useTheme } from "@/theme";
+import { useDialog } from "@/providers/DialogProvider";
+import { useSubmitGuard } from "@/hooks/useSubmitGuard";
+import { useTopInset } from "@/hooks/useTopInset";
 import { updateGroup } from "../services/group.service";
 
 export default function RenameGroupScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const dialog = useDialog();
+  const guard = useSubmitGuard();
+  const topInset = useTopInset();
 
   const { groupId, name } = useLocalSearchParams<{
     groupId: string;
@@ -24,11 +29,14 @@ export default function RenameGroupScreen() {
 
   const [value, setValue] = useState(name ?? "");
 
-  function save() {
+  const save = guard(async () => {
     const trimmedName = value.trim();
 
     if (!trimmedName) {
-      Alert.alert("Group name required", "Please enter a valid group name.");
+      await dialog.alert({
+        title: "Group name required",
+        message: "Please enter a valid group name.",
+      });
       return;
     }
 
@@ -38,11 +46,11 @@ export default function RenameGroupScreen() {
       pathname: "/group",
       params: { groupId },
     });
-  }
+  });
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { paddingTop: topInset }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView

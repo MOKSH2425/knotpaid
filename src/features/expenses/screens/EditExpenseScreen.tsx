@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -10,14 +9,25 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
+import { KPDateTimeField } from "@/components/common/KPDateTimeField";
+import { KPParticipantSelector } from "@/components/common/KPParticipantSelector";
 import { Colors, Spacing, useTheme } from "@/theme";
+import { useDialog } from "@/providers/DialogProvider";
+import { useSubmitGuard } from "@/hooks/useSubmitGuard";
+import { useTopInset } from "@/hooks/useTopInset";
 
 import { getMembers } from "@/features/members/services/member.service";
-import { updateExpense } from "../services/expense.service";
+import {
+  getExpenseParticipantIds,
+  updateExpense,
+} from "../services/expense.service";
 
 export default function EditExpenseScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const dialog = useDialog();
+  const guard = useSubmitGuard();
+  const topInset = useTopInset();
 
   const {
     expenseId,
@@ -25,18 +35,24 @@ export default function EditExpenseScreen() {
     title,
     amount,
     paidBy: initialPaidBy,
+    expenseDate: initialExpenseDate,
   } = useLocalSearchParams<{
     expenseId: string;
     groupId: string;
     title: string;
     amount: string;
     paidBy: string;
+    expenseDate: string;
   }>();
 
   const [expenseTitle, setExpenseTitle] = useState(title ?? "");
   const [expenseAmount, setExpenseAmount] = useState(amount ?? "");
+  const [expenseDate, setExpenseDate] = useState(
+    initialExpenseDate ? new Date(initialExpenseDate) : new Date(),
+  );
   const [members, setMembers] = useState<any[]>([]);
   const [paidBy, setPaidBy] = useState(initialPaidBy ?? "");
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!groupId) return;
@@ -49,36 +65,78 @@ export default function EditExpenseScreen() {
     }
   }, [groupId, paidBy]);
 
-  function saveExpense() {
+  useEffect(() => {
+    if (!expenseId) return;
+    setParticipantIds(getExpenseParticipantIds(expenseId));
+  }, [expenseId]);
+
+  function toggleParticipant(memberId: string) {
+    setParticipantIds((current) =>
+      current.includes(memberId)
+        ? current.filter((id) => id !== memberId)
+        : [...current, memberId],
+    );
+  }
+
+  const parsedAmountPreview = Number(expenseAmount);
+  const perPersonShare =
+    participantIds.length > 0 &&
+    Number.isFinite(parsedAmountPreview) &&
+    parsedAmountPreview > 0
+      ? parsedAmountPreview / participantIds.length
+      : null;
+
+  const saveExpense = guard(async () => {
     const trimmedTitle = expenseTitle.trim();
     const parsedAmount = Number(expenseAmount);
 
     if (!trimmedTitle) {
-      Alert.alert("Expense title required", "Please enter an expense title.");
+      await dialog.alert({
+        title: "Expense title required",
+        message: "Please enter an expense title.",
+      });
       return;
     }
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert(
-        "Invalid amount",
-        "Please enter an amount greater than zero.",
-      );
+      await dialog.alert({
+        title: "Invalid amount",
+        message: "Please enter an amount greater than zero.",
+      });
       return;
     }
 
     if (!paidBy) {
-      Alert.alert("Payer required", "Please select who paid for this expense.");
+      await dialog.alert({
+        title: "Payer required",
+        message: "Please select who paid for this expense.",
+      });
       return;
     }
 
-    updateExpense(expenseId, trimmedTitle, parsedAmount, paidBy);
+    if (participantIds.length === 0) {
+      await dialog.alert({
+        title: "Select who's splitting this",
+        message: "Choose at least one person under Split Between.",
+      });
+      return;
+    }
+
+    updateExpense(
+      expenseId,
+      trimmedTitle,
+      parsedAmount,
+      paidBy,
+      expenseDate.toISOString(),
+      participantIds,
+    );
 
     router.back();
-  }
+  });
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { paddingTop: topInset }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
@@ -110,6 +168,11 @@ export default function EditExpenseScreen() {
 
           <View style={{ height: 16 }} />
 
+          <KPText style={styles.sectionTitle}>When</KPText>
+          <KPDateTimeField value={expenseDate} onChange={setExpenseDate} />
+
+          <View style={{ height: 16 }} />
+
           <KPCard style={styles.previewCard}>
             <KPText style={styles.previewLabel}>Preview</KPText>
             <KPText style={styles.previewTitle}>
@@ -118,6 +181,12 @@ export default function EditExpenseScreen() {
             <KPText style={styles.previewAmount}>
               {expenseAmount ? `₹ ${expenseAmount}` : "Enter amount"}
             </KPText>
+            {perPersonShare !== null ? (
+              <KPText style={styles.previewShare}>
+                ₹{perPersonShare.toFixed(2)} each • {participantIds.length}{" "}
+                {participantIds.length === 1 ? "person" : "people"}
+              </KPText>
+            ) : null}
           </KPCard>
 
           <View style={{ height: 22 }} />
@@ -137,6 +206,19 @@ export default function EditExpenseScreen() {
               />
             </View>
           ))}
+
+          <View style={{ height: 22 }} />
+
+          <KPText style={styles.sectionTitle}>Split Between</KPText>
+          <KPText style={styles.helperText}>
+            Only the people you select here will owe a share of this expense.
+          </KPText>
+          <View style={{ height: 10 }} />
+          <KPParticipantSelector
+            members={members}
+            selectedIds={participantIds}
+            onToggle={toggleParticipant}
+          />
 
           <View style={{ height: 22 }} />
 
@@ -178,6 +260,11 @@ function getStyles(colors: typeof Colors) {
       color: colors.text,
       marginBottom: 10,
     },
+    helperText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      lineHeight: 18,
+    },
     previewCard: {
       padding: 14,
       backgroundColor: colors.surfaceLight,
@@ -196,6 +283,11 @@ function getStyles(colors: typeof Colors) {
       marginTop: 4,
       color: colors.secondary,
       fontWeight: "700",
+    },
+    previewShare: {
+      marginTop: 6,
+      color: colors.textSecondary,
+      fontSize: 13,
     },
     payerButton: {
       backgroundColor: colors.surfaceLight,

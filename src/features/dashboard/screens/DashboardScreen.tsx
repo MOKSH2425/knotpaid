@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 
 import DashboardHeader from "../components/DashboardHeader";
@@ -10,6 +10,8 @@ import KPEmptyState from "@/components/common/KPEmptyState";
 import { KPText } from "@/components/ui";
 
 import { useTheme } from "@/theme";
+import { useTopInset } from "@/hooks/useTopInset";
+import { useRefresh } from "@/hooks/useRefresh";
 
 import { getGroups } from "@/features/groups/services/group.service";
 import { getMembers } from "@/features/members/services/member.service";
@@ -21,18 +23,13 @@ import GroupCard from "../components/GroupCard";
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
+  const topInset = useTopInset();
   const [groups, setGroups] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
   const [expenseCount, setExpenseCount] = useState(0);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, []),
-  );
-
-  function load() {
+  const load = useCallback(() => {
     const data = getGroups();
 
     setGroups(data);
@@ -56,14 +53,30 @@ export default function DashboardScreen() {
     setTotal(totalExpense);
     setMemberCount(totalMembers);
     setExpenseCount(totalExpenses);
-  }
+  }, []);
+
+  const { refreshing, onRefresh } = useRefresh(load);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   return (
     <>
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.background }}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: topInset }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
         <DashboardHeader />
 
@@ -80,7 +93,7 @@ export default function DashboardScreen() {
         {groups.length === 0 ? (
           <KPEmptyState onPress={() => router.push("/create-group")} />
         ) : (
-          groups.map((group) => {
+          groups.map((group, index) => {
             const members = getMembers(group.id);
             const expenses = getExpenses(group.id);
 
@@ -98,13 +111,13 @@ export default function DashboardScreen() {
                 members={members.length}
                 expenses={expenses.length}
                 total={total}
+                index={index}
               />
             );
           })
         )}
       </ScrollView>
 
-      {/* ✅ STEP 3 — Floating Action Button */}
       <KPFab onPress={() => router.push("/create-group")} />
     </>
   );

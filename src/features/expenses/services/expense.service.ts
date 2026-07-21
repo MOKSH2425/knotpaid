@@ -1,5 +1,4 @@
 import { db } from "@/database/db";
-import { getMembers } from "@/features/members/services/member.service";
 import { calculateEqualSplit } from "./split.service";
 
 export function createExpense(
@@ -7,13 +6,21 @@ export function createExpense(
   title: string,
   amount: number,
   paidBy: string,
+  // ISO string — when the expense actually happened, editable and
+  // independent from createdAt (the DB insert time). Defaults to "now"
+  // if not provided.
+  expenseDate: string | undefined,
+  // Which members are actually splitting this expense — NOT necessarily
+  // every member of the group. A member with no real involvement in any
+  // expense should be freely deletable; that only works if this list is
+  // the true participant set instead of "everyone, always."
+  participantIds: string[],
 ) {
-  const expenseId = Date.now().toString();
-  const members = getMembers(groupId);
-
-  if (members.length === 0) {
-    throw new Error("Cannot create an expense without group members.");
+  if (participantIds.length === 0) {
+    throw new Error("An expense must have at least one participant.");
   }
+
+  const expenseId = Date.now().toString();
 
   db.runSync(
     `
@@ -26,9 +33,10 @@ export function createExpense(
         amount,
         paidBy,
         splitType,
-        createdAt
+        createdAt,
+        expenseDate
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       expenseId,
@@ -39,12 +47,13 @@ export function createExpense(
       paidBy,
       "equal",
       new Date().toISOString(),
+      expenseDate ?? new Date().toISOString(),
     ],
   );
 
-  const share = calculateEqualSplit(amount, members.length);
+  const share = calculateEqualSplit(amount, participantIds.length);
 
-  members.forEach((member) => {
+  participantIds.forEach((memberId) => {
     db.runSync(
       `
       INSERT INTO expense_shares
@@ -57,9 +66,9 @@ export function createExpense(
       VALUES (?, ?, ?, ?)
       `,
       [
-        expenseId + member.id,
+        expenseId + memberId,
         expenseId,
-        member.id,
+        memberId,
         share,
       ],
     );
@@ -73,15 +82,31 @@ export function getExpenses(groupId: string) {
     amount: number;
     paidBy: string;
     createdAt: string;
+    expenseDate: string;
   }>(
     `
       SELECT *
       FROM expenses
       WHERE groupId=?
-      ORDER BY createdAt DESC
+      ORDER BY expenseDate DESC, createdAt DESC
     `,
     [groupId],
   );
+}
+
+// Which members are currently splitting a given expense — used to
+// preload the "Split Between" selection when editing.
+export function getExpenseParticipantIds(expenseId: string): string[] {
+  const rows = db.getAllSync<{ memberId: string }>(
+    `
+      SELECT memberId
+      FROM expense_shares
+      WHERE expenseId=?
+    `,
+    [expenseId],
+  );
+
+  return rows.map((row) => row.memberId);
 }
 
 export function updateExpense(
@@ -89,31 +114,39 @@ export function updateExpense(
   title: string,
   amount: number,
   paidBy: string,
+  expenseDate: string | undefined,
+  participantIds: string[],
 ) {
-  const expense = db.getFirstSync<{
-    groupId: string;
-  }>(
-    `
-      SELECT groupId
-      FROM expenses
-      WHERE id=?
-    `,
-    [expenseId],
-  );
+  if (participantIds.length === 0) {
+    throw new Error("An expense must have at least one participant.");
+  }
 
-  if (!expense) return;
-
-  db.runSync(
-    `
-      UPDATE expenses
-      SET
-        title=?,
-        amount=?,
-        paidBy=?
-      WHERE id=?
-    `,
-    [title.trim(), amount, paidBy, expenseId],
-  );
+  if (expenseDate) {
+    db.runSync(
+      `
+        UPDATE expenses
+        SET
+          title=?,
+          amount=?,
+          paidBy=?,
+          expenseDate=?
+        WHERE id=?
+      `,
+      [title.trim(), amount, paidBy, expenseDate, expenseId],
+    );
+  } else {
+    db.runSync(
+      `
+        UPDATE expenses
+        SET
+          title=?,
+          amount=?,
+          paidBy=?
+        WHERE id=?
+      `,
+      [title.trim(), amount, paidBy, expenseId],
+    );
+  }
 
   db.runSync(
     `
@@ -123,10 +156,9 @@ export function updateExpense(
     [expenseId],
   );
 
-  const members = getMembers(expense.groupId);
-  const share = calculateEqualSplit(amount, members.length);
+  const share = calculateEqualSplit(amount, participantIds.length);
 
-  members.forEach((member) => {
+  participantIds.forEach((memberId) => {
     db.runSync(
       `
       INSERT INTO expense_shares
@@ -139,9 +171,9 @@ export function updateExpense(
       VALUES (?, ?, ?, ?)
       `,
       [
-        expenseId + member.id,
+        expenseId + memberId,
         expenseId,
-        member.id,
+        memberId,
         share,
       ],
     );

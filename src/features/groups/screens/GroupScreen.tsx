@@ -1,16 +1,20 @@
 import { useCallback, useState } from "react";
-import { Alert, StyleSheet, ScrollView, View } from "react-native";
+import { RefreshControl, StyleSheet, ScrollView, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { KPButton, KPCard, KPText } from "@/components/ui";
 import { Colors, Spacing, useTheme } from "@/theme";
+import { useRefresh } from "@/hooks/useRefresh";
+import { useTopInset } from "@/hooks/useTopInset";
+import { useSubmitGuard } from "@/hooks/useSubmitGuard";
+import KPEmptyState from "@/components/common/KPEmptyState";
+import { useDialog } from "@/providers/DialogProvider";
 
 import { getMembers } from "@/features/members/services/member.service";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import {
-  getExpenses,
-  deleteExpense,
-} from "@/features/expenses/services/expense.service";
+import { getExpenses } from "@/features/expenses/services/expense.service";
 import { getGroups } from "../services/group.service";
+import { exportGroupToPdf } from "../services/pdfExport.service";
 import { calculateBalances } from "@/features/expenses/services/balance.service";
 import KPAvatar from "@/components/ui/KPAvatar";
 import { calculateSettlements } from "@/features/expenses/services/settlement.service";
@@ -23,34 +27,77 @@ const GROUP_TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+// Small helper so every card list in this screen staggers in the same way
+// without repeating the FadeInDown config everywhere.
+function cardEntrance(index: number) {
+  return FadeInDown.delay(index * 60).springify().damping(16);
+}
+
 export default function GroupScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const topInset = useTopInset();
+  const dialog = useDialog();
+  const guard = useSubmitGuard();
 
   const [group, setGroup] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [settlements, setSettlements] = useState<any[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
 
+  const loadData = useCallback(() => {
+    if (!groupId) return;
+
+    const groups = getGroups();
+    const current = groups.find((g) => g.id === groupId);
+
+    if (!current) return;
+
+    setGroup(current);
+    setMembers(getMembers(current.id));
+    setExpenses(getExpenses(current.id));
+    setBalances(calculateBalances(current.id));
+    setSettlements(calculateSettlements(current.id));
+  }, [groupId]);
+
+  const { refreshing, onRefresh } = useRefresh(loadData);
+
   useFocusEffect(
     useCallback(() => {
-      if (!groupId) return;
-
-      const groups = getGroups();
-      const current = groups.find((g) => g.id === groupId);
-
-      if (!current) return;
-
-      setGroup(current);
-      setMembers(getMembers(current.id));
-      setExpenses(getExpenses(current.id));
-      setBalances(calculateBalances(current.id));
-      setSettlements(calculateSettlements(current.id));
-    }, [groupId]),
+      loadData();
+    }, [loadData]),
   );
+
+  const handleExport = guard(async () => {
+    setExporting(true);
+
+    try {
+      await exportGroupToPdf({
+        groupName: group.name,
+        groupType: group.type,
+        members,
+        expenses,
+        balances,
+        settlements,
+      });
+    } catch (error) {
+      console.error("PDF export failed:", error);
+
+      const detail =
+        error instanceof Error ? error.message : String(error);
+
+      await dialog.alert({
+        title: "Couldn't export PDF",
+        message: `Something went wrong generating the file.\n\nDetails: ${detail}`,
+      });
+    } finally {
+      setExporting(false);
+    }
+  });
 
   if (!group) return null;
 
@@ -64,9 +111,18 @@ export default function GroupScreen() {
       <ScrollView
         style={styles.container}
         contentContainerStyle={{
+          paddingTop: topInset,
           paddingBottom: 140,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
         <KPCard style={styles.headerCard}>
           <KPText style={styles.title}>{group.name}</KPText>
@@ -113,134 +169,64 @@ export default function GroupScreen() {
 
         <KPText style={styles.sectionTitle}>Members</KPText>
         {members.length === 0 ? (
-          <KPCard>
-            <KPText>No members added yet.</KPText>
-
-            <View style={{ height: 15 }} />
-
-            <KPButton
-              title="Add First Member"
-              onPress={() =>
-                router.push({
-                  pathname: "/members",
-                  params: { groupId },
-                })
-              }
-            />
-          </KPCard>
+          <KPEmptyState
+            icon="👥"
+            title="No Members Yet"
+            message="Add the people sharing expenses in this group."
+            buttonText="Add First Member"
+            onPress={() =>
+              router.push({
+                pathname: "/members",
+                params: { groupId },
+              })
+            }
+          />
         ) : (
-          members.map((member) => (
-            <KPCard key={member.id} style={{ marginBottom: 12 }}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <KPAvatar name={member.name} />
-                <View style={{ marginLeft: 15 }}>
-                  <KPText style={{ fontWeight: "700", fontSize: 18 }}>
-                    {member.name}
-                  </KPText>
-                  <KPText style={{ color: colors.textSecondary }}>
-                    Group Member
-                  </KPText>
+          members.map((member, index) => (
+            <Animated.View key={member.id} entering={cardEntrance(index)}>
+              <KPCard style={{ marginBottom: 12 }}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <KPAvatar name={member.name} />
+                  <View style={{ marginLeft: 15 }}>
+                    <KPText style={{ fontWeight: "700", fontSize: 18 }}>
+                      {member.name}
+                    </KPText>
+                    <KPText style={{ color: colors.textSecondary }}>
+                      Group Member
+                    </KPText>
+                  </View>
                 </View>
-              </View>
-            </KPCard>
+              </KPCard>
+            </Animated.View>
           ))
         )}
 
         <View style={{ height: 25 }} />
 
-        <KPText style={styles.sectionTitle}>Expenses</KPText>
-        {expenses.length === 0 ? (
-          <KPCard>
-            <KPText>No expenses yet.</KPText>
-          </KPCard>
-        ) : (
-          expenses.map((expense) => (
-            <KPCard key={expense.id} style={{ marginBottom: 12 }}>
-              <KPText
-                style={{
-                  fontSize: 18,
-                  fontWeight: "700",
-                }}
-              >
-                {expense.title}
-              </KPText>
-
-              <KPText style={{ marginTop: 6 }}>₹ {expense.amount}</KPText>
-
-              <KPText
-                style={{
-                  marginTop: 6,
-                  color: colors.textSecondary,
-                }}
-              >
-                Paid by {members.find((m) => m.id === expense.paidBy)?.name}
-              </KPText>
-
-              <View style={{ height: 15 }} />
-
-              <KPButton
-                title="Edit Expense"
-                onPress={() =>
-                  router.push({
-                    pathname: "/edit-expense",
-                    params: {
-                      expenseId: expense.id,
-                      groupId: group.id,
-                      title: expense.title,
-                      amount: expense.amount.toString(),
-                      paidBy: expense.paidBy,
-                    },
-                  })
-                }
-              />
-
-              <View style={{ height: 10 }} />
-
-              <KPButton
-                title="Delete Expense"
-                textColor={colors.white}
-                style={{ backgroundColor: colors.danger }}
-                onPress={() => {
-                  Alert.alert("Delete Expense", `Delete "${expense.title}"?`, [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Delete",
-                      style: "destructive",
-                      onPress: () => {
-                        deleteExpense(expense.id);
-
-                        setExpenses(getExpenses(group.id));
-                        setBalances(calculateBalances(group.id));
-                        setSettlements(calculateSettlements(group.id));
-                      },
-                    },
-                  ]);
-                }}
-              />
-            </KPCard>
-          ))
-        )}
-
         <KPText style={styles.sectionTitle}>Balances</KPText>
-        {members.map((member) => (
-          <KPCard key={member.id} style={{ marginBottom: 12 }}>
-            <KPText style={{ fontWeight: "700" }}>{member.name}</KPText>
-            <KPText
-              style={{
-                color:
-                  (balances[member.id] ?? 0) >= 0
-                    ? colors.success
-                    : colors.danger,
-                fontWeight: "700",
-                marginTop: 6,
-              }}
-            >
-              {(balances[member.id] ?? 0) >= 0
-                ? `Gets ₹${balances[member.id].toFixed(2)}`
-                : `Owes ₹${Math.abs(balances[member.id]).toFixed(2)}`}
-            </KPText>
-          </KPCard>
+        {members.map((member, index) => (
+          <Animated.View key={member.id} entering={cardEntrance(index)}>
+            <KPCard style={{ marginBottom: 12 }}>
+              <KPText style={{ fontWeight: "700" }}>{member.name}</KPText>
+              <KPText
+                style={{
+                  color:
+                    (balances[member.id] ?? 0) >= 0
+                      ? colors.success
+                      : colors.danger,
+                  fontWeight: "700",
+                  marginTop: 6,
+                }}
+              >
+                {(balances[member.id] ?? 0) >= 0
+                  ? `Gets ₹${balances[member.id].toFixed(2)}`
+                  : `Owes ₹${Math.abs(balances[member.id]).toFixed(2)}`}
+              </KPText>
+            </KPCard>
+          </Animated.View>
         ))}
+
+        <View style={{ height: 10 }} />
 
         <KPText style={styles.sectionTitle}>Settlements</KPText>
         {settlements.length === 0 ? (
@@ -253,24 +239,51 @@ export default function GroupScreen() {
             const to = members.find((m) => m.id === item.to);
 
             return (
-              <KPCard key={index} style={{ marginBottom: 12 }}>
-                <KPText style={{ fontWeight: "700" }}>
-                  💸 {from?.name} pays {to?.name}
-                </KPText>
+              <Animated.View key={index} entering={cardEntrance(index)}>
+                <KPCard style={{ marginBottom: 12 }}>
+                  <KPText style={{ fontWeight: "700" }}>
+                    💸 {from?.name} pays {to?.name}
+                  </KPText>
 
-                <KPText
-                  style={{
-                    marginTop: 6,
-                    color: colors.success,
-                    fontWeight: "700",
-                  }}
-                >
-                  ₹ {item.amount.toFixed(2)}
-                </KPText>
-              </KPCard>
+                  <KPText
+                    style={{
+                      marginTop: 6,
+                      color: colors.success,
+                      fontWeight: "700",
+                    }}
+                  >
+                    ₹ {item.amount.toFixed(2)}
+                  </KPText>
+                </KPCard>
+              </Animated.View>
             );
           })
         )}
+
+        <View style={{ height: 26 }} />
+
+        <KPButton
+          title={`View All Expenses (${expenses.length})`}
+          onPress={() =>
+            router.push({
+              pathname: "/group-expenses",
+              params: { groupId },
+            })
+          }
+        />
+
+        <View style={{ height: 12 }} />
+
+        <KPButton
+          title={exporting ? "Generating PDF..." : "Export PDF"}
+          textColor={colors.text}
+          style={{
+            backgroundColor: colors.surfaceLight,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+          onPress={handleExport}
+        />
       </ScrollView>
 
       <KPFab

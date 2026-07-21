@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,6 +10,9 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
 import { Colors, Spacing, useTheme } from "@/theme";
+import { useDialog } from "@/providers/DialogProvider";
+import { useSubmitGuard } from "@/hooks/useSubmitGuard";
+import { useTopInset } from "@/hooks/useTopInset";
 import { createGroup, GroupType } from "../services/group.service";
 import { router } from "expo-router";
 
@@ -28,27 +30,33 @@ const GROUP_TYPES: Array<{
 export default function CreateGroupScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const dialog = useDialog();
+  const guard = useSubmitGuard();
+  const topInset = useTopInset();
 
   const [groupName, setGroupName] = useState("");
   const [groupType, setGroupType] = useState<GroupType>("other");
 
   const selectedType = GROUP_TYPES.find((item) => item.key === groupType);
 
-  function handleCreate() {
+  const handleCreate = guard(async () => {
     const trimmedName = groupName.trim();
 
     if (!trimmedName) {
-      Alert.alert("Group name required", "Please enter a name for your group.");
+      await dialog.alert({
+        title: "Group name required",
+        message: "Please enter a name for your group.",
+      });
       return;
     }
 
     createGroup(trimmedName, groupType);
     router.replace("/");
-  }
+  });
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { paddingTop: topInset }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView

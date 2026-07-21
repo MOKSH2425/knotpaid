@@ -1,27 +1,36 @@
 import { useCallback, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
 } from "react-native";
 import { useFocusEffect, router, useLocalSearchParams } from "expo-router";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { KPButton, KPCard, KPInput, KPText } from "@/components/ui";
 import { Colors, Spacing, useTheme } from "@/theme";
+import { useDialog } from "@/providers/DialogProvider";
+import { useRefresh } from "@/hooks/useRefresh";
+import { useSubmitGuard } from "@/hooks/useSubmitGuard";
+import { useTopInset } from "@/hooks/useTopInset";
+import KPEmptyState from "@/components/common/KPEmptyState";
 
 import {
   createMember,
   getMembers,
   memberHasExpenses,
+  memberNameExists,
   deleteMember,
 } from "../services/member.service";
 
 export default function MembersScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const dialog = useDialog();
+  const topInset = useTopInset();
 
   const [members, setMembers] = useState<
     {
@@ -38,55 +47,77 @@ export default function MembersScreen() {
     setMembers(getMembers(groupId));
   }, [groupId]);
 
+  const { refreshing, onRefresh } = useRefresh(loadMembers);
+  const guard = useSubmitGuard();
+
   useFocusEffect(
     useCallback(() => {
       loadMembers();
     }, [loadMembers]),
   );
 
-  function addMember() {
+  const addMember = guard(async () => {
     if (!name.trim()) {
-      Alert.alert("Member name required", "Please enter a name before adding.");
+      await dialog.alert({
+        title: "Member name required",
+        message: "Please enter a name before adding.",
+      });
       return;
     }
 
     if (!groupId) return;
 
-    createMember(groupId, name);
-    setName("");
-    loadMembers();
-  }
-
-  function confirmDelete(memberId: string, memberName: string) {
-    if (memberHasExpenses(memberId)) {
-      Alert.alert(
-        "Cannot delete member",
-        `${memberName} has expenses or shares and cannot be removed yet.`,
-      );
+    if (memberNameExists(groupId, name)) {
+      await dialog.alert({
+        title: "Name already in this group",
+        message: `Someone named "${name.trim()}" is already in this group. Try adding a last initial or nickname to tell them apart.`,
+      });
       return;
     }
 
-    Alert.alert("Delete member", `Remove ${memberName} from this group?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          deleteMember(memberId);
-          loadMembers();
-        },
-      },
-    ]);
+    createMember(groupId, name);
+    setName("");
+    loadMembers();
+  });
+
+  async function confirmDelete(memberId: string, memberName: string) {
+    if (memberHasExpenses(memberId)) {
+      await dialog.alert({
+        title: "Cannot delete member",
+        message: `${memberName} has expenses or shares and cannot be removed yet.`,
+      });
+      return;
+    }
+
+    const confirmed = await dialog.confirm({
+      title: "Delete member",
+      message: `Remove ${memberName} from this group?`,
+      confirmText: "Delete",
+      destructive: true,
+    });
+
+    if (!confirmed) return;
+
+    deleteMember(memberId);
+    loadMembers();
   }
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { paddingTop: topInset }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
         <KPCard style={styles.heroCard}>
           <KPText style={styles.title}>Add Members</KPText>
@@ -110,42 +141,51 @@ export default function MembersScreen() {
         <View style={{ height: 24 }} />
 
         {members.length === 0 ? (
-          <KPCard style={styles.emptyCard}>
-            <KPText style={styles.emptyText}>No members added yet.</KPText>
-          </KPCard>
+          <KPEmptyState
+            icon="👥"
+            title="No Members Yet"
+            message="Add the first person above to get this group started."
+            buttonText="Add First Member"
+            onPress={addMember}
+          />
         ) : (
-          members.map((member) => (
-            <KPCard key={member.id} style={styles.memberCard}>
-              <KPText style={styles.memberName}>{member.name}</KPText>
+          members.map((member, index) => (
+            <Animated.View
+              key={member.id}
+              entering={FadeInDown.delay(index * 60).springify().damping(16)}
+            >
+              <KPCard style={styles.memberCard}>
+                <KPText style={styles.memberName}>{member.name}</KPText>
 
-              <View style={styles.actionRow}>
-                <View style={styles.actionButtonWrap}>
-                  <KPButton
-                    title="Rename"
-                    onPress={() =>
-                      router.push({
-                        pathname: "/edit-member",
-                        params: {
-                          memberId: member.id,
-                          name: member.name,
-                          groupId,
-                        },
-                      })
-                    }
-                    textColor={colors.text}
-                    style={styles.secondaryButton}
-                  />
+                <View style={styles.actionRow}>
+                  <View style={styles.actionButtonWrap}>
+                    <KPButton
+                      title="Rename"
+                      onPress={() =>
+                        router.push({
+                          pathname: "/edit-member",
+                          params: {
+                            memberId: member.id,
+                            name: member.name,
+                            groupId,
+                          },
+                        })
+                      }
+                      textColor={colors.text}
+                      style={styles.secondaryButton}
+                    />
+                  </View>
+                  <View style={styles.actionButtonWrap}>
+                    <KPButton
+                      title="Delete"
+                      onPress={() => confirmDelete(member.id, member.name)}
+                      textColor={colors.white}
+                      style={styles.dangerButton}
+                    />
+                  </View>
                 </View>
-                <View style={styles.actionButtonWrap}>
-                  <KPButton
-                    title="Delete"
-                    onPress={() => confirmDelete(member.id, member.name)}
-                    textColor={colors.white}
-                    style={styles.dangerButton}
-                  />
-                </View>
-              </View>
-            </KPCard>
+              </KPCard>
+            </Animated.View>
           ))
         )}
 
@@ -213,13 +253,6 @@ function getStyles(colors: typeof Colors) {
     },
     dangerButton: {
       backgroundColor: colors.danger,
-    },
-    emptyCard: {
-      alignItems: "center",
-      paddingVertical: 20,
-    },
-    emptyText: {
-      color: colors.textSecondary,
     },
   });
 }

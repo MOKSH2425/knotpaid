@@ -9,15 +9,9 @@ type Props = {
   expenses: number;
 };
 
-function Item({
-  title,
-  value,
-  colors,
-}: {
-  title: string;
-  value: number;
-  colors: { text: string; textSecondary: string };
-}) {
+function Item({ title, value }: { title: string; value: number }) {
+  const { colors } = useTheme();
+
   return (
     <View
       style={{
@@ -40,8 +34,6 @@ function Item({
 }
 
 export default function StatsRow(props: Props) {
-  const { colors } = useTheme();
-
   return (
     <View
       style={{
@@ -51,9 +43,9 @@ export default function StatsRow(props: Props) {
         paddingVertical: 8,
       }}
     >
-      <Item title="Groups" value={props.groups} colors={colors} />
-      <Item title="Members" value={props.members} colors={colors} />
-      <Item title="Expenses" value={props.expenses} colors={colors} />
+      <Item title="Groups" value={props.groups} />
+      <Item title="Members" value={props.members} />
+      <Item title="Expenses" value={props.expenses} />
     </View>
   );
 }

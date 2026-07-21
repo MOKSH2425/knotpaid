@@ -1,5 +1,31 @@
 import { db } from "@/database/db";
 
+// Case-insensitive, whitespace-trimmed match within a single group.
+// excludeMemberId lets a rename check against everyone *except* itself.
+export function memberNameExists(
+  groupId: string,
+  name: string,
+  excludeMemberId?: string,
+) {
+  const trimmed = name.trim().toLowerCase();
+  if (!trimmed) return false;
+
+  const members = db.getAllSync<{ id: string; name: string }>(
+    `
+      SELECT id, name
+      FROM members
+      WHERE groupId=?
+    `,
+    [groupId],
+  );
+
+  return members.some(
+    (member) =>
+      member.id !== excludeMemberId &&
+      member.name.trim().toLowerCase() === trimmed,
+  );
+}
+
 export function createMember(groupId: string, name: string) {
   db.runSync(
     `

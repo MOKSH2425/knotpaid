@@ -59,5 +59,26 @@ export function runMigrations() {
     );
   }
 
+  const expenseColumns = db.getAllSync<{ name: string }>(
+    `PRAGMA table_info(${TABLES.EXPENSES})`,
+  );
+
+  const hasExpenseDate = expenseColumns.some(
+    (column) => column.name === "expenseDate",
+  );
+
+  if (!hasExpenseDate) {
+    // Separate from createdAt (which is the DB insert timestamp and never
+    // changes). expenseDate is user-editable — "when did this actually
+    // happen" — and defaults to createdAt for any rows that predate this
+    // column, so nothing existing breaks.
+    db.runSync(
+      `ALTER TABLE ${TABLES.EXPENSES} ADD COLUMN expenseDate TEXT`,
+    );
+    db.runSync(
+      `UPDATE ${TABLES.EXPENSES} SET expenseDate = createdAt WHERE expenseDate IS NULL`,
+    );
+  }
+
   console.log("Database migrated successfully.");
 }
